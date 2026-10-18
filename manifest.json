@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Lichess Stockfish Helper",
   "version": "0.1.0",
-  "description": "Local Stockfish (WASM) analysis for Lichess analysis boards and studies.",
+  "description": "Local Stockfish (WASM) analysis for the Lichess analysis board.",
   "minimum_chrome_version": "116",
   "permissions": ["offscreen"],
   "background": {
@@ -11,13 +11,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://lichess.org/analysis*", "https://lichess.org/study/*"],
+      "matches": ["https://lichess.org/analysis*"],
       "js": ["src/content/page-bridge.js"],
       "world": "MAIN",
       "run_at": "document_start"
     },
     {
-      "matches": ["https://lichess.org/analysis*", "https://lichess.org/study/*"],
+      "matches": ["https://lichess.org/analysis*"],
       "js": ["src/content/position-reader.js", "src/content/content-script.js"],
       "run_at": "document_idle"
     }

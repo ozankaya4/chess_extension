@@ -8,7 +8,23 @@
   const SUPPORTED_VARIANTS = new Set(['standard', 'fromPosition']);
 
   let lastRequestedFen = null;
+  let lastWarningMessage = null;
   let debounceTimerId = null;
+
+  function isAllowedAnalysisPage(pageLocation) {
+    // TODO: Study pages (/study/...) are disabled because their FEN is only in the
+    // DOM while the "Share" tab is open. Re-enable them (here and in manifest.json
+    // "matches") once we have a reliable full-FEN source for studies.
+    if (pageLocation.hostname !== 'lichess.org') return false;
+    return pageLocation.pathname === '/analysis' || pageLocation.pathname.startsWith('/analysis/');
+  }
+
+  // Warn once per distinct problem so a stuck page does not flood the console.
+  function warnOnce(warningMessage) {
+    if (warningMessage === lastWarningMessage) return;
+    lastWarningMessage = warningMessage;
+    console.warn(LOG_PREFIX, warningMessage);
+  }
 
   function formatEvaluation(evaluation) {
     if (!evaluation) return 'n/a';
@@ -20,17 +36,23 @@
   }
 
   async function analyseCurrentPosition() {
-    const currentPosition = globalThis.LichessPositionReader.readCurrentPosition();
-    if (!currentPosition) return;
-    if (currentPosition.fen === lastRequestedFen) return;
+    if (!isAllowedAnalysisPage(window.location)) return;
 
-    if (currentPosition.variant && !SUPPORTED_VARIANTS.has(currentPosition.variant)) {
+    const currentPosition = globalThis.LichessPositionReader.readCurrentPosition();
+    if (currentPosition.status !== 'ok') {
+      warnOnce(`No reliable full FEN available, skipping analysis (${currentPosition.reason}).`);
+      return;
+    }
+    lastWarningMessage = null;
+
+    if (currentPosition.fen === lastRequestedFen) return;
+    lastRequestedFen = currentPosition.fen;
+
+    if (!SUPPORTED_VARIANTS.has(currentPosition.variant)) {
       console.info(LOG_PREFIX, `Variant "${currentPosition.variant}" is not supported; skipping.`);
-      lastRequestedFen = currentPosition.fen;
       return;
     }
 
-    lastRequestedFen = currentPosition.fen;
     console.debug(LOG_PREFIX, `Analysing (FEN from ${currentPosition.source}):`, currentPosition.fen);
 
     let response;
@@ -71,10 +93,11 @@
     debounceTimerId = setTimeout(analyseCurrentPosition, POSITION_CHANGE_DEBOUNCE_MS);
   }
 
+  if (!isAllowedAnalysisPage(window.location)) return;
+
   // Lichess re-renders the board (<cg-board> piece nodes and their transforms)
-  // and the move list on every position change. Observing the whole page keeps
-  // working across study chapter switches, which replace large parts of the DOM;
-  // the debounce plus the FEN comparison keeps this cheap.
+  // and the move list on every position change. The debounce plus the FEN
+  // comparison keeps observing the whole page cheap.
   const positionObserver = new MutationObserver(scheduleAnalysis);
   positionObserver.observe(document.body, {
     subtree: true,

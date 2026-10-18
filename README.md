@@ -1,6 +1,6 @@
 # Lichess Stockfish Helper
 
-An open-source Chrome extension (Manifest V3) that runs Stockfish locally, as WebAssembly, to analyse positions on Lichess analysis boards and studies. Nothing is sent to remote servers.
+An open-source Chrome extension (Manifest V3) that runs Stockfish locally, as WebAssembly, to analyse positions on the Lichess analysis board (lichess.org/analysis). Nothing is sent to remote servers.
 
 **Status: foundation only.** The extension reads the current position, analyses it, and logs the evaluation and best move to the page's DevTools console. The evaluation bar, move arrows and Elo-limited suggestions will come later.
 
@@ -13,7 +13,7 @@ src/
   offscreen/offscreen.html|js    Hidden extension page that hosts the Stockfish Web Worker
   engine/stockfish-engine.js     UCI wrapper: analysePosition(fen, options) -> Promise
   content/page-bridge.js         MAIN-world script that reads Lichess's own FEN
-  content/position-reader.js     Gets the full FEN (page controller first, FEN input as fallback)
+  content/position-reader.js     Gets a validated full FEN (page controller first, FEN box as fallback)
   content/content-script.js      MutationObserver + debounce, sends positions, logs results
 vendor/stockfish/                Stockfish 19 "lite single-threaded" WASM build (npm "stockfish" 19.0.1)
 ```
@@ -60,6 +60,8 @@ Calling `analysePosition` while a search is running sends `stop`, waits for that
 ## Known limitations
 
 - A single engine is shared by every tab, so analysing in two Lichess tabs at once makes them cancel each other.
+- Only lichess.org/analysis is supported. Study pages are disabled until there is a reliable full-FEN source for them (their FEN is only in the DOM while the Share tab is open).
+- The FEN is never guessed. If no complete, valid FEN can be read, analysis is skipped and a warning is logged.
 - Variants other than standard chess (including Chess960) are skipped for now.
 
 ## License

@@ -3,7 +3,7 @@
 //
 // Lichess assigns its AnalyseCtrl to `window.site.analysis` (lila:
 // ui/analyse/src/start.ts). `ctrl.node.fen` is the full six-field FEN of the
-// node currently shown on the board, on both /analysis and /study pages.
+// node currently shown on the /analysis board.
 //
 // The isolated content script asks for the position by dispatching a DOM
 // event; we answer with another DOM event. dispatchEvent is synchronous, so
